@@ -8,7 +8,12 @@
     <texture type="skybox" builtin="gradient" rgb1="1 1 1" rgb2=".6 .8 1" width="256" height="256"/>
   </asset>
 
+  <visual>
+    <global offwidth="2000" offheight="2000"/>
+  </visual>
+
     <worldbody>
+      <camera name="front_facing" pos="5 0 2" xyaxes="0 1 0 0 0 1"/>
       <light pos="0 1 1" dir="0 -1 -1" diffuse="1 1 1"/>
 <!--
       <geom name="floor" size="0 0 .05" type="plane"/>

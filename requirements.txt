@@ -1,3 +1,5 @@
 --only-binary=:all:
 mujoco
 numpy
+pillow
+pybind11-stubgen
