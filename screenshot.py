@@ -1,3 +1,4 @@
+from re import S
 import mujoco as m
 import numpy as np
 from PIL import Image
@@ -6,6 +7,7 @@ import record
 
 IMG_HEIGHT = 1080
 IMG_WIDTH = 1920
+SIMLEN = 2 #seconds
 DPI=150
 FPS=60
 TIMESTEP=0.002
@@ -58,7 +60,7 @@ def main():
 
     #run sim
     simstart=data.time
-    while (data.time-simstart) < 5.0:
+    while (data.time-simstart) < SIMLEN:
         
         if  len(states)<(data.time-simstart)*FPS:
             print(data.time-simstart, "seconds simulated\n")
