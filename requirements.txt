@@ -3,3 +3,6 @@ mujoco
 numpy
 pillow
 pybind11-stubgen
+matplotlib
+imageio
+imageio[ffmpeg] #both?
