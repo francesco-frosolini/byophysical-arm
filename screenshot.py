@@ -5,11 +5,11 @@ from PIL import Image
 import matplotlib.pyplot as plt
 import record
 
-IMG_HEIGHT = 1080
+IMG_HEIGHT = 1088
 IMG_WIDTH = 1920
-SIMLEN = 2 #seconds
+SIMLEN = 4 #seconds
 DPI=150
-FPS=60
+FPS=30
 TIMESTEP=0.002
 SPS=(1/TIMESTEP)/FPS
 
@@ -101,11 +101,10 @@ def main():
 
 
     # Save the plot
-
     # DIRECTORY MUST EXIST 
     plt.savefig('plots/hand_height.png')
 
-    record.save_video(record.render_frames(model, states, IMG_HEIGHT, IMG_WIDTH), "salute_video", FPS)
+    record.save_video(record.render_frames(model, states, IMG_HEIGHT, IMG_WIDTH, timevals=timevals, plot_y_data=hand_z0_t), "salute_video", FPS)
 
 if __name__ == "__main__":
     main()
