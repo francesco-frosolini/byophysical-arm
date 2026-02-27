@@ -3,7 +3,10 @@ import imageio
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg
-import io
+
+DPI=150
+PLOT_W=800
+PLOT_H=600
 
 def render_state(model, state):
     data = m.MjData(model)
@@ -11,23 +14,27 @@ def render_state(model, state):
     m.mj_fwdPosition(model, data)
     return data
 
-def plot_to_image(timevals, plot_y_data, current_time, width=400, height=300, dpi=100):
-    """Generate a matplotlib plot as a numpy image array."""
+def plot_to_image(time_series, current_time, width=400, height=300, dpi=100):
+    """Generate a matplotlib plot as a numpy image array from a time-series list of (t,y) tuples."""
+    # unzip series
+    timevals, plot_y_data = zip(*time_series)
+    timevals = np.array(timevals)
+    plot_y_data = np.array(plot_y_data)
+
     fig = plt.figure(figsize=(width/dpi, height/dpi), dpi=dpi)
     ax = fig.add_subplot(111)
     
     # Filter data up to current time
-    mask = np.array(timevals) <= current_time
-    timevals_filtered = np.array(timevals)[mask]
-    plot_y_data_filtered = np.array(plot_y_data)[mask]
+    mask = timevals <= current_time
+    timevals_filtered = timevals[mask]
+    plot_y_data_filtered = plot_y_data[mask]
     
     # Use final time + 10% margin for fixed x-axis
     max_time = timevals[-1] * 1.1
     
     # Calculate y-axis limits with ±10% margin
-    y_data_array = np.array(plot_y_data)
-    y_min = np.min(y_data_array)
-    y_max = np.max(y_data_array)
+    y_min = np.min(plot_y_data)
+    y_max = np.max(plot_y_data)
     y_range = y_max - y_min
     y_margin = y_range * 0.1
     y_min_limit = y_min - y_margin
@@ -73,36 +80,40 @@ def overlay_plot(frame, plot_image):
     
     return frame
 
-def render_frames(model, states_buffer, height, width, camera="front_facing", timevals=None, plot_y_data=None):
+def render_frames(model, states_buffer, height, width, camera="front_facing", time_series=None):
+    """Recreate frames from a buffer of states.
+
+    :param time_series: optional list of (time, y) tuples that will be plotted over the
+                        replay. If provided, it is used to generate a live plot overlay.
+    """
     frames = []
     with m.Renderer(model, height, width) as r:
         replay_data = m.MjData(model)
         
         for i, state in enumerate(states_buffer):
-            replay_data= render_state(model, state)
+            replay_data = render_state(model, state)
 
-            if i==0:
+            if i == 0:
                 print(f"Time of the first saved data object: {replay_data.time}")
                 print(f"Number of frames to render: {len(states_buffer)}")
-            if i==len(states_buffer)-1:
+            if i == len(states_buffer) - 1:
                 print(f"Time of the last saved data object: {replay_data.time}\n")
             r.update_scene(replay_data, camera)
 
-            pixels=r.render()  
+            pixels = r.render()
             if r._mjr_context is not None:
                 draw_time_overlay(replay_data, r._mjr_context, width, height)
-                viewport=m.MjrRect(0, 0, width, height)
-                
+                viewport = m.MjrRect(0, 0, width, height)
                 m.mjr_readPixels(pixels, None, viewport, r._mjr_context)
-            
+
             # Flip the image vertically (OpenGL to standard image format)
             pixels_flipped = np.flipud(pixels)
-            
+
             # Add live plot if data provided
-            if timevals is not None and plot_y_data is not None:
-                plot_image = plot_to_image(timevals, plot_y_data, replay_data.time)
+            if time_series is not None:
+                plot_image = plot_to_image(time_series, replay_data.time)
                 pixels_flipped = overlay_plot(pixels_flipped, plot_image)
-            
+
             frames.append(pixels_flipped)
     return frames
 
@@ -135,3 +146,17 @@ def draw_time_overlay(data, mjr_context: m.MjrContext, w, h):
         "", 
         mjr_context
     )
+
+def plot_data(time_series, save_name):
+    """Plot and save data given as a list of (time, value) tuples."""
+    timevals, plot_y_data = zip(*time_series)
+    figsize = (PLOT_W / DPI, PLOT_H / DPI)
+    _, ax = plt.subplots(figsize=figsize, dpi=DPI)
+
+    ax.plot(timevals, plot_y_data)
+    ax.set_title(f'{save_name} over time\n')
+
+    # Save the plot
+    # DIRECTORY MUST EXIST (created in dockerfile)
+    plt.savefig(f'plots/{save_name}.png')
+    image = plot_to_image(time_series, timevals[-1])
