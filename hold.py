@@ -17,6 +17,8 @@ TIMESTEP=0.001
 def main():
     try:
         model = m.MjModel.from_xml_path("robotic_arm.xml")
+        spec=m.MjSpec.from_file("robotic_arm.xml")
+        #make model from spec
         model.opt.timestep = TIMESTEP
         data = m.MjData(model)
     except Exception as e:
@@ -36,7 +38,8 @@ def main():
     sensord = data.sensor("sensor_sh1").data
     sensor_dim = len(sensord)
     sensor_series = [[] for _ in range(sensor_dim)]
-    
+    act = None
+
     while (data.time - simstart) < SIMLEN:
         # Save state every 1/FPS seconds
         if len(states) < (data.time - simstart) * FPS:
@@ -46,14 +49,14 @@ def main():
             m.mj_getState(model, data, state_buffer, m.mjtState.mjSTATE_INTEGRATION)
             states.append(state_buffer.copy())
         # Disable gravity after 1 second (run once)
-        if data.time - simstart >= 3.0 and model.opt.gravity[2] != 0:
+        if data.time - simstart >= 0.5 and model.opt.gravity[2] != 0:
             model.opt.gravity[2] = 0
-            print("Gravity disabled at 3 seconds\n")
+            print(f"Gravity disabled at {data.time - simstart} seconds\n")
+        
         # record sensor reading
         sensord = data.sensor("sensor_sh1").data
         for i in range(len(sensord)):
             sensor_series[i].append((data.time, sensord[i]))
-        
 
         m.mj_step(model, data)
     
@@ -63,6 +66,7 @@ def main():
     #record.save_video(record.render_frames(model, states, IMG_HEIGHT, IMG_WIDTH), "hold_salute", FPS)
     for i in range(sensor_dim):
         record.plot_data(sensor_series[i], f"sensor_sh1_{i}")
+
 
 
 if __name__ == "__main__":
