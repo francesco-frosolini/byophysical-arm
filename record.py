@@ -80,7 +80,7 @@ def overlay_plot(frame, plot_image):
     
     return frame
 
-def render_frames(model, states_buffer, height, width, camera="front_facing", time_series=None):
+def render_frames(model, states_buffer, height, width, camera=None, time_series=None):
     """Recreate frames from a buffer of states.
 
     :param time_series: optional list of (time, y) tuples that will be plotted over the
@@ -111,7 +111,7 @@ def render_frames(model, states_buffer, height, width, camera="front_facing", ti
 
             # Add live plot if data provided
             if time_series is not None:
-                plot_image = plot_to_image(time_series, replay_data.time)
+                plot_image = plot_to_image(time_series, replay_data.time, width=width//4, height=height//4, dpi=100)
                 pixels_flipped = overlay_plot(pixels_flipped, plot_image)
 
             frames.append(pixels_flipped)

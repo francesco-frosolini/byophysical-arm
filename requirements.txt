@@ -6,3 +6,7 @@ pybind11-stubgen
 matplotlib
 imageio
 imageio[ffmpeg] #both?
+scikit-video @ git+https://github.com/scikit-video/scikit-video.git@master
+#the version on pypi of this myosuite dependency depends on python2
+myosuite
+mjrl @ git+https://github.com/aravindr93/mjrl.git@pvr_beta_1vk
