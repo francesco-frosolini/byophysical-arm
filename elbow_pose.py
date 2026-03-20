@@ -1,6 +1,5 @@
 #make the elbow reach a pose using pretrained policy and gym environment
-from re import I
-
+from myosuite.envs.myo.myobase.pose_v0 import PoseEnvV0
 import myosuite
 from myosuite.utils import gym
 import mujoco as m
@@ -18,17 +17,17 @@ SEED = 1
 
 np.random.seed(SEED)
 
-env = gym.make('myoElbowPose1D6MFixed-v0')
+env : PoseEnvV0 = gym.make('myoElbowPose1D6MFixed-v0') #type: ignore #unclear if type hinting is a good idea
 _, _ = env.reset(seed=SEED)
-policy=".venv/lib/python3.9/site-packages/myosuite/agents/baslines_NPG/myoElbowPose1D6MFixed-v0/2022-02-26_21-16-27/32_env=myoElbowPose1D6MFixed-v0,seed=3/iterations/best_policy.pickle"
+policy=".venv/lib/python3.9/site-packages/myosuite/agents/baslines_NPG/myoElbowPose1D6MRandom-v0/2022-02-26_21-16-27/35_env=myoElbowPose1D6MRandom-v0,seed=3/iterations/best_policy.pickle"
 pi=pickle.load(open(policy, 'rb'))
 
 
-obs, _ = env.reset(seed=SEED)
 
 env.unwrapped.target_type = 'fixed'
-trgAngle= 90  
-env.unwrapped.target_jnt_value = [np.deg2rad(trgAngle)]
+trgAngle= 90 #degrees
+env.unwrapped.target_jnt_value = np.deg2rad(trgAngle)
+obs, _ = env.reset(seed=SEED)
 
 mujoco_model = env.unwrapped.sim.model.ptr
 mujoco_data = env.unwrapped.sim.data.ptr
@@ -53,7 +52,7 @@ elbow_angle_series = []
 
 while (mujoco_data.time - simstart) < SIMLEN:
 
-    o = env.get_obs()
+    o = env.unwrapped.get_obs() #type: ignore
     # get the next action from the policy
     action, _ = pi.get_action(o)
     # take an action based on the current observation
@@ -68,5 +67,6 @@ while (mujoco_data.time - simstart) < SIMLEN:
         m.mj_getState(mujoco_model, mujoco_data, state_buffer, m.mjtState.mjSTATE_INTEGRATION)
         states.append(state_buffer.copy())
 
-record.save_video(record.render_frames(mujoco_model, states, IMG_HEIGHT, IMG_WIDTH, camera="side_view", time_series=elbow_angle_series), "strike_elbow_pose", FPS)
+#record.save_video(record.render_frames(mujoco_model, states, IMG_HEIGHT, IMG_WIDTH, camera="side_view", time_series=elbow_angle_series), "strike_elbow_pose", FPS)
+print("plotting data\n")
 record.plot_data(elbow_angle_series, "elbow_angle")
