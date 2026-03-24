@@ -5,3 +5,5 @@ videos/
 typings/
 .vscode/
 todo.md
+.venv/
+__pycache__/
