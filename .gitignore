@@ -7,4 +7,5 @@ typings/
 todo.md
 .venv/
 __pycache__/
+.vscode/
 old_luts/
