@@ -16,8 +16,8 @@ TIMESTEP=0.001
 
 def main():
     try:
-        model = m.MjModel.from_xml_path("robotic_arm.xml")
-        spec=m.MjSpec.from_file("robotic_arm.xml")
+        model = m.MjModel.from_xml_path("models/robotic_arm.xml")
+        spec=m.MjSpec.from_file("models/robotic_arm.xml")
         #make model from spec
         model.opt.timestep = TIMESTEP
         data = m.MjData(model)
