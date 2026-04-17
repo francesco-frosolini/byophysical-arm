@@ -14,3 +14,5 @@ myosuite
 torch ==2.0.1
 mjrl @ git+https://github.com/aravindr93/mjrl.git@pvr_beta_1vk
 panda
+zipp
+simple_pid

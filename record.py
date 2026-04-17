@@ -157,9 +157,9 @@ def draw_time_overlay(data, mjr_context: m.MjrContext, w, h):
         mjr_context
     )
 
-def plot_data(time_series, save_name,title:None|str=None):
+def plot_data(time_series, save_name,title:None|str=None, ref_series=None):
     """Plot and save data given as a list of (time, value) tuples. Size is in record.py's globals
-        If a title is not specified, it defaults to the save_name. The plot is saved in the 'plots' directory with the name save_name.png. The directory must exist (created in dockerfile).
+        If a title is not specified, it defaults to the save_name. The plot is saved in the 'plots' directory with the name save_name.png. The directory must exist (TODO created in dockerfile).
     """
     print("Plotting data\n")
     timevals, plot_y_data = zip(*time_series)
@@ -167,13 +167,18 @@ def plot_data(time_series, save_name,title:None|str=None):
     _, ax = plt.subplots(figsize=figsize, dpi=DPI)
 
     ax.plot(timevals, plot_y_data)
+    if ref_series is not None:
+        ref_timevals, ref_y_data = zip(*ref_series)
+        ax.plot(ref_timevals, ref_y_data, 'r--', label='Reference')
+        ax.legend()
+    
     if title is not None:
         ax.set_title(title)
     else:
         ax.set_title(f'{save_name} over time\n')
 
     # Save the plot
-    # DIRECTORY MUST EXIST (created in dockerfile)
+    # DIRECTORY MUST EXIST (TODO created in dockerfile)
     plt.savefig(f'plots/{save_name}.png')
 
 
