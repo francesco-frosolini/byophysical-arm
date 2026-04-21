@@ -3,6 +3,7 @@ import imageio
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg
+import os
 
 DPI=150
 PLOT_W=800
@@ -178,7 +179,8 @@ def plot_data(time_series, save_name,title:None|str=None, ref_series=None):
         ax.set_title(f'{save_name} over time\n')
 
     # Save the plot
-    # DIRECTORY MUST EXIST (TODO created in dockerfile)
+    directory = "plots/" + os.path.dirname(save_name)
+    os.makedirs(directory, exist_ok=True)
     plt.savefig(f'plots/{save_name}.png')
 
 

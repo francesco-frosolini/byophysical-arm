@@ -55,7 +55,7 @@ kp=0.01
 ki=0.4
 kd=0.00001
 
-set_point=90.0  # degrees
+set_point=10.0  # degrees
 controller=PID(kp,ki,kd,setpoint=set_point)
 controller.sample_time = TIMESTEP
 controller.output_limits = act_BRA.ctrlrange.copy() #for anti WU
@@ -86,5 +86,5 @@ while (data.time - simstart) < SIMLEN:
 
 
 #record.save_video(record.render_frames(model, states, IMG_HEIGHT, IMG_WIDTH, camera="side_view", time_series=elbow_angle_series, plot_title="Elbow Angle [degrees]"), "muscle_Pctrl_elbow", FPS)
-record.plot_data(elbow_angle_series, "muscle_P_ctrl/elbow_angle", title="Elbow Angle [degrees]", ref_series=elbow_ref_series)
-record.plot_data(muscle_activation_series, "muscle_P_ctrl/BRA_activation", title="BRA Muscle Activation")
+record.plot_data(elbow_angle_series, "muscle_PID_ctrl/elbow_angle", title="Elbow Angle [degrees]", ref_series=elbow_ref_series)
+record.plot_data(muscle_activation_series, "muscle_PID_ctrl/BRA_activation", title="BRA Muscle Activation")
