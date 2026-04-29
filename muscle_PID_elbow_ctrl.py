@@ -15,7 +15,7 @@ import pandas as pd
 
 IMG_HEIGHT = 1088
 IMG_WIDTH = 1088
-SIMLEN = 5  # seconds
+SIMLEN = 10  # seconds
 FPS = 30
 SEED = 1
 TIMESTEP = 0.001
@@ -55,7 +55,7 @@ kp=0.01
 ki=0.4
 kd=0.00001
 
-set_point=10.0  # degrees
+set_point=100.0  # degrees
 controller=PID(kp,ki,kd,setpoint=set_point)
 controller.sample_time = TIMESTEP
 controller.output_limits = act_BRA.ctrlrange.copy() #for anti WU
@@ -87,4 +87,4 @@ while (data.time - simstart) < SIMLEN:
 
 #record.save_video(record.render_frames(model, states, IMG_HEIGHT, IMG_WIDTH, camera="side_view", time_series=elbow_angle_series, plot_title="Elbow Angle [degrees]"), "muscle_Pctrl_elbow", FPS)
 record.plot_data(elbow_angle_series, "muscle_PID_ctrl/elbow_angle", title="Elbow Angle [degrees]", ref_series=elbow_ref_series)
-record.plot_data(muscle_activation_series, "muscle_PID_ctrl/BRA_activation", title="BRA Muscle Activation")
+record.plot_data(muscle_activation_series, "muscle_PID_ctrl/BRA_activation", title="BRA Muscle Activation [0-1]")

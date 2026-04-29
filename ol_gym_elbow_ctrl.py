@@ -64,9 +64,9 @@ actuator_input_series = []
 step_count = 0
 while (mujoco_data.time - simstart) < SIMLEN:
     # Set controls: only the i-th actuator from CSV, others to 0
-    mujoco_data.ctrl[:] = 0.0
-    if step_count < len(values):
-        mujoco_data.ctrl[i] = values[step_count]
+    mujoco_data.ctrl[:] = 1.0
+    #if step_count < len(values):
+     #   mujoco_data.ctrl[i] = values[step_count]
 
     # Step the simulation
     m.mj_step(mujoco_model, mujoco_data)
