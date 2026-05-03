@@ -1,4 +1,3 @@
-from re import S
 import mujoco as m
 import numpy as np
 from PIL import Image
@@ -10,8 +9,7 @@ IMG_WIDTH = 1920
 SIMLEN = 4 #seconds
 DPI=150
 FPS=30
-TIMESTEP=0.002
-SPS=(1/TIMESTEP)/FPS
+TIMESTEP=0.001
 
 
 def save_screenshot(pixels, filename):
@@ -51,8 +49,7 @@ def main():
     print("hand x pos: ",hand_x,"\n")
 
 
-    timevals = []
-    hand_z0_t=[]
+    time_series = []  # list of (time, hand_z) tuples
     states = []
     timestep = 0
 
@@ -71,9 +68,8 @@ def main():
 
         timestep += 1
 
-        timevals.append(data.time)
-        hand=data.body('hand')
-        hand_z0_t.append(hand.xpos[2])
+        hand = data.body('hand')
+        time_series.append((data.time, hand.xpos[2]))
 
         m.mj_step(model, data)
         
@@ -90,21 +86,15 @@ def main():
 
 
     
-    width = 600
-    height = 800
-    figsize = (width / DPI, height / DPI)
-    _, ax = plt.subplots(figsize=figsize, dpi=DPI)
+    # plot using record helper
+    record.plot_data(time_series, "hand_height")
 
-    ax.plot(timevals, hand_z0_t, label='hand height')
-    ax.set_title('hand height over time\n')
-    ax.set_ylabel('meters / second')
-
-
-    # Save the plot
-    # DIRECTORY MUST EXIST 
-    plt.savefig('plots/hand_height.png')
-
-    record.save_video(record.render_frames(model, states, IMG_HEIGHT, IMG_WIDTH, timevals=timevals, plot_y_data=hand_z0_t), "salute_video", FPS)
+    # also draw the video with live overlay
+    record.save_video(
+        record.render_frames(model, states, IMG_HEIGHT, IMG_WIDTH, time_series=time_series),
+        "salute_video",
+        FPS
+    )
 
 if __name__ == "__main__":
     main()

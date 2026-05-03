@@ -3,5 +3,8 @@ screenshots/
 plots/
 videos/
 typings/
-.vscode/settings.json
+.vscode/
 todo.md
+.venv/
+__pycache__/
+old_luts/
