@@ -1,4 +1,4 @@
-# Open loop control for elbow using data from plant_data.json
+# Control elbow using motor
 
 import json
 import sys

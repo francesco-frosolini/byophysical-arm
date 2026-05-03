@@ -4,7 +4,6 @@ from requests import get
 
 from muscle_torque_map import lut
 import xarray as xr
-import record
 from tqdm import tqdm
 from scipy.optimize import minimize
 import numpy as np
@@ -12,16 +11,21 @@ import numpy as np
 # Rendering parameters
 IMG_HEIGHT = 1088
 IMG_WIDTH = 1088
+DPI=150
+PLOT_W=800
+PLOT_H=600
 
 # Optimization parameters
 CO_CONTR_W=0.2
 
 #LUT generation parameters
 TORQUE_STEPS =10 # Number of torque levels to sample for each angle
-comb_lut = xr.open_dataarray("comb_lut1.nc")
+comb_lut = xr.open_dataarray("comb_lut.nc")
 
 
 def main():
+
+    plot_limits()
     
     angle = 37
     req_torque = 5.0
@@ -36,6 +40,8 @@ def main():
     activations=get_activation(angle, req_torque)
     activation_dict = {muscle: act for muscle, act in zip(lut.muscle.values, [round(a, 3) for a in activations])}
     print(f"Optimal activation for angle {angle} and torque {req_torque} from combinedLUT: {activation_dict}")
+
+
 
 def get_activation(angle, req_torque):
     mint=comb_lut.interp(angle=angle).min_torque.values
@@ -81,8 +87,21 @@ def generate_lut(name):
     
     comb_lut.to_netcdf(name)
 
+def plot_limits():
+    import matplotlib.pyplot as plt
+    plt.figure(figsize = (PLOT_W / DPI, PLOT_H / DPI), dpi=DPI)
 
-    
+    comb_lut.min_torque.plot(label='Min Torque', color='blue', marker='o')
+    comb_lut.max_torque.plot(label='Max Torque', color='red', marker='o')
+
+    # Add standard matplotlib embellishments
+    plt.title('Torque Boundaries vs. Angle')
+    plt.ylabel('Torque (Nm)')
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(f'plots/muscle_torque_map.png')
+    print("Plots saved to ./plots/muscle_torque_map/ folder")
+        
 def total_torque(activations,angle):
         torque = 0
         for i, muscle in enumerate(lut.muscle.values):

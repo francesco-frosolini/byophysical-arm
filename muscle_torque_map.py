@@ -28,14 +28,14 @@ TIMESTEP = 0.001  # Simulation timestep in seconds
 # LUT generation parameters
 ACT_STEPS = 1  # Number of activation levels to sample
 ANGLE_STEPS = 36  # Number of joint angles to sample (0-180 degrees)
-lut = xr.open_dataarray("forward_lut5.nc")
+lut = xr.open_dataarray("forward_lut.nc")
 
 
 def main():
 
-    generate_lut("forward_lut6.nc")
+    generate_lut("forward_lut.nc")
     global lut
-    lut = xr.open_dataarray("forward_lut6.nc")
+    lut = xr.open_dataarray("forward_lut.nc")
     # Run sample experiment with plotting
     #t = torque_experiment("BRA", angle_deg=90, activation=1, plot=True)
     #print(t)
