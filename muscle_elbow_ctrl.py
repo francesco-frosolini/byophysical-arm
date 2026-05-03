@@ -2,31 +2,34 @@
 
 import json
 import sys
+from gymnasium import spec
 import mujoco as m
 import numpy as np
 from simple_pid import PID
+import muscle_co_contraction
+from muscle_torque_map import get_activation
+from muscle_co_contraction import get_activation
 
+import muscle_torque_map
 from plant_models import PlantPlotData
 sys.modules['numpy'] = np  
 import time
 
 import record
-import pandas as pd
+from tqdm import tqdm
 
 IMG_HEIGHT = 1088
 IMG_WIDTH = 1088
-SIMLEN = 10  # seconds
+SIMLEN = 4  # seconds
 FPS = 30
 SEED = 1
 TIMESTEP = 0.001
 def main():
-    np.random.seed(SEED)
 
-
-    model = m.MjModel.from_xml_path("models/myo_sim/elbow/myoelbow_1dof6muscles.xml")
+    spec = m.MjSpec.from_file("models/myo_sim/elbow/myoelbow_1dof6muscles.xml") #this model has gravity
+    model = spec.compile()
     model.opt.timestep = TIMESTEP
     data = m.MjData(model)
-
 
     simstart = data.time
 
@@ -49,51 +52,45 @@ def main():
 
     list_torques = plant_data.joint_data[1].input_cmd_torque
 
-    act_agonist = model.actuator("BRA")
-    act_antagonist = model.actuator("TRIlong")
-
     muscle_objs = [model.actuator(i) for i in range(6)]
     muscle_names = [muscle.name for muscle in muscle_objs]
-
+    bra= model.actuator("BRA")
 
 
     muscle_force_series = []
     muscle_input_series = []
     torque_series = []
-    #torques=np.linspace(-1, 1, int(SIMLEN/TIMESTEP))  
-
-
 
     # sim loop
-    while (data.time - simstart) < SIMLEN:
+    with tqdm(total=SIMLEN) as pbar:
+        while data.time - simstart < SIMLEN:
 
-        # apply ctrl
-        sensord = np.rad2deg(data.qpos[0].copy())
-        torque_set_point = -0.5 #torques[int(data.time / TIMESTEP)] if int(data.time / TIMESTEP) < len(torques) else 0
-        (agonist, antagonist) = muscle_from_torque(torque_set_point)
-        data.ctrl[act_agonist.id] = agonist
-        data.ctrl[act_antagonist.id] = antagonist
+            # apply ctrl
+            curr_angle = np.rad2deg(data.qpos[0].copy())
 
-        elbow_angle_series.append((data.time, sensord))
+            
 
-        actuator_force = data.actuator_force.copy()
-        actuator_input = data.ctrl.copy()
-        elbow_angle_series.append((data.time, sensord))
-        muscle_force_series.append((data.time, actuator_force))
-        muscle_input_series.append((data.time, actuator_input))
-        torque_series.append((data.time, data.qfrc_actuator.copy()))
+            elbow_angle_series.append((data.time, curr_angle))
 
-        # Save state every 1/FPS seconds for video rendering
-        if len(states) < (data.time - simstart) * FPS:
-            state_buffer = np.empty(state_size, dtype=np.float64)
-            m.mj_getState(model, data, state_buffer, m.mjtState.mjSTATE_INTEGRATION)
-            states.append(state_buffer.copy())
+            actuator_force = data.actuator_force.copy()
+            actuator_input = data.ctrl.copy()
+            elbow_angle_series.append((data.time, curr_angle))
+            muscle_force_series.append((data.time, actuator_force))
+            muscle_input_series.append((data.time, actuator_input))
+            torque_series.append((data.time, data.qfrc_actuator.copy()))
+
+            # Save state every 1/FPS seconds for video rendering
+            if len(states) < (data.time - simstart) * FPS:
+                state_buffer = np.empty(state_size, dtype=np.float64)
+                m.mj_getState(model, data, state_buffer, m.mjtState.mjSTATE_INTEGRATION)
+                states.append(state_buffer.copy())
 
 
-        # Step the simulation
-        m.mj_step(model, data)
-        step_count += 1
-        #print(f"Simulation time: {time.time() - start} seconds")
+            # Step the simulation
+            m.mj_step(model, data)
+            step_count += 1
+            pbar.update(data.time - simstart - pbar.n)
+            #print(f"Simulation time: {time.time() - start} seconds")
 
 
     #record.save_video(record.render_frames(model, states, IMG_HEIGHT, IMG_WIDTH, camera="side_view", time_series=elbow_angle_series, plot_title="Elbow Angle [degrees]"), "muscle_Pctrl_elbow", FPS)
@@ -106,21 +103,8 @@ def main():
     for j in range(len(muscle_input_series[0][1])):
         input_series_j = [(t, inputs[j]) for t, inputs in muscle_input_series]
         record.plot_data(input_series_j, f"ol_muscle_ctrl/ol_muscle_input_{j}", muscle_names[j])
+    print("Plots saved to ./plots/ol_muscle_ctrl/ folder")
 
-
-def muscle_from_torque(torque, u_base=0.1, k_ago=6.0, k_ant=5.0):
-    #co contrazione
-    if torque > 0:
-        u_agonist = u_base + torque / k_ago
-        u_antagonist = u_base
-    elif torque < 0:
-        u_agonist = u_base
-        u_antagonist = u_base + (-torque) / k_ant
-    else:
-        u_agonist = u_base
-        u_antagonist = u_base
-
-    return np.clip(u_agonist, 0.0, 1.0), np.clip(u_antagonist, 0.0, 1.0)
 
 if __name__ == "__main__":
     main()

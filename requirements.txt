@@ -16,3 +16,4 @@ mjrl @ git+https://github.com/aravindr93/mjrl.git@pvr_beta_1vk
 panda
 zipp
 simple_pid
+xarray

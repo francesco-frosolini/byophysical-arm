@@ -55,7 +55,7 @@ motor_activation_series = []
 
 while (data.time - simstart) < SIMLEN:
     # Save state every 1/FPS seconds
-    data.ctrl[0] = 0.2
+    data.ctrl[0] = -8
     #if step_count < len(list_torques):
     #    data.ctrl[0] = list_torques[step_count]
     
@@ -78,4 +78,5 @@ while (data.time - simstart) < SIMLEN:
 
 #record.save_video(record.render_frames(model, states, IMG_HEIGHT, IMG_WIDTH, camera="side_view", time_series=elbow_angle_series, plot_title="Elbow Angle [degrees]"), "ol_1act_elbow", FPS)
 record.plot_data(elbow_angle_series, "1act_ol_ctrl/ol_elbow_angle")
-record.plot_data(motor_activation_series, "1act_ol_ctrl/motor_activation", title="Motor Activation [-1 to 1]")
+record.plot_data(motor_activation_series, "1act_ol_ctrl/motor_activation", title="Motor Activation [Nm]")
+print("Plots saved to ./plots/1act_ol_ctrl/ folder")

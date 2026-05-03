@@ -161,7 +161,7 @@
   </tendon>
 
   <actuator>
-    <motor name="elbow_motor" joint="r_elbow_flex" ctrlrange="-10 10" gear="1"/>
+    <motor name="elbow_motor" joint="r_elbow_flex" ctrlrange="-100 100" gear="1"/>
   </actuator>
 
 </mujocoinclude>

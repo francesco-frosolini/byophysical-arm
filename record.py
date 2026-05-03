@@ -158,21 +158,25 @@ def draw_time_overlay(data, mjr_context: m.MjrContext, w, h):
         mjr_context
     )
 
-def plot_data(time_series, save_name,title:None|str=None, ref_series=None):
-    """Plot and save data given as a list of (time, value) tuples. Size is in record.py's globals
-        If a title is not specified, it defaults to the save_name. The plot is saved in the 'plots' directory with the name save_name.png. The directory must exist (TODO created in dockerfile).
+def plot_data(xy_series, save_name, title: None | str = None, ref_series=None):
+    """Plot and save data given as a list of (x, y) tuples.
+
+    The x values are not required to be time; they only need to be the same
+    length as the y values. If no title is provided, the plot title defaults
+    to the save_name.
+
+    The plot is saved in the 'plots' directory with the name save_name.png.
     """
-    print("Plotting data\n")
-    timevals, plot_y_data = zip(*time_series)
+    xvals, yvals = zip(*xy_series)
     figsize = (PLOT_W / DPI, PLOT_H / DPI)
     _, ax = plt.subplots(figsize=figsize, dpi=DPI)
 
-    ax.plot(timevals, plot_y_data)
+    ax.plot(xvals, yvals)
     if ref_series is not None:
-        ref_timevals, ref_y_data = zip(*ref_series)
-        ax.plot(ref_timevals, ref_y_data, 'r--', label='Reference')
+        ref_xvals, ref_yvals = zip(*ref_series)
+        ax.plot(ref_xvals, ref_yvals, 'r--', label='Reference')
         ax.legend()
-    
+
     if title is not None:
         ax.set_title(title)
     else:
