@@ -27,15 +27,15 @@ TIMESTEP = 0.001  # Simulation timestep in seconds
 
 # LUT generation parameters
 ACT_STEPS = 1  # Number of activation levels to sample
-ANGLE_STEPS = 36  # Number of joint angles to sample (0-180 degrees)
+ANGLE_STEPS = 36  # Number of joint angles to sample
 lut = xr.open_dataarray("forward_lut.nc")
 
 
 def main():
 
-    generate_lut("forward_lut.nc")
-    global lut
-    lut = xr.open_dataarray("forward_lut.nc")
+    #generate_lut("forward_lut_new.nc")
+    #global lut
+    #lut = xr.open_dataarray("forward_lut_new.nc")
     # Run sample experiment with plotting
     #t = torque_experiment("BRA", angle_deg=90, activation=1, plot=True)
     #print(t)
@@ -48,8 +48,8 @@ def main():
     #plot_lut_slice("BRA", angle_deg=40)
     
     for i in muscle_names:
-        print(f"Plotting LUT slice for {i} at 90 degrees")
-        plot_lut_slice(i,angle_deg=20)
+        print(f"Plotting LUT slice for {i} at 0 act")
+        plot_lut_slice(i,activation=1)
     """
     req_torque = 8
     for muscle in muscle_names:
@@ -65,7 +65,7 @@ def main():
         t=lut.sel(muscle=muscle).interp(angle=angle, activation=activations[i]).item()
         torques.append(t)
     print("Torques summed from LUT: ", sum(torques))
-    
+    torque_experiment("TRIlong",90,1,True)
     t = torque_sum_experiment(muscle_names=muscle_names, angle_deg=angle, activations=activations, plot=True)
     print("Torque from direct simulation: ", t)
 
@@ -74,9 +74,10 @@ def generate_lut(name):
     # Initialize lookup table (LUT) for all muscles
     base_spec = spec_setup()
     muscle_names = [muscle.name for muscle in base_spec.actuators]
+    max_angle=180/np.pi*base_spec.joint("r_elbow_flex").range[1]
 
     # Create angle and activation ranges for sampling
-    angles = np.linspace(0, 180, ANGLE_STEPS + 1)
+    angles = np.linspace(0, max_angle, ANGLE_STEPS + 1)
     activations = np.linspace(0, 1, ACT_STEPS + 1)
 
     # Create empty data array with proper dimensions
@@ -236,8 +237,8 @@ def get_activation(muscle_name, angle_val, target_torque):
     # Extract the relevant slice of the LUT for the specified muscle and angle
     if angle_val<0:
         angle_val=0
-    if angle_val>180:
-        angle_val=180
+    if angle_val>130: #close enough to max_angle
+        angle_val=130
     subset = lut.sel(muscle=muscle_name).interp(angle=angle_val)
 
     flexor=subset[1]>subset[0] # positive torque increment = flexor muscle
@@ -273,13 +274,16 @@ def plot_lut_slice(muscle_name, angle_deg=None, activation=None, torque=None):
         raise ValueError("Provide exactly one of angle_deg, activation, or torque to specify the slice to plot.")
 
     if angle_deg is not None:
-        torque_values = lut.loc[muscle_name, angle_deg, :].values
+        torque_values = lut.sel(muscle=muscle_name).interp(angle=angle_deg).values
         x_values = lut.coords["activation"].values
         xy_series = list(zip(x_values.tolist(), torque_values.tolist()))
         save_name = f"muscle_torque_map/{muscle_name}/{angle_deg}deg_vs_activation"
         title = f"{muscle_name} torque vs activation at {angle_deg}°"
     elif activation is not None:
-        torque_values = lut.loc[muscle_name, :, activation].values
+        #BUGGED torque_values = lut.sel(muscle=muscle_name).interp(activation=activation)
+        t0=lut.sel(muscle=muscle_name,activation=0)
+        t1=lut.sel(muscle=muscle_name,activation=1)
+        torque_values=t0.values+activation*t1.values
         x_values = lut.coords["angle"].values
         xy_series = list(zip(x_values.tolist(), torque_values.tolist()))
         save_name = f"muscle_torque_map/{muscle_name}/activation_{activation:.2f}_vs_angle"

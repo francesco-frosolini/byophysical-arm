@@ -1,12 +1,14 @@
 import __main__
+import os
 
 from requests import get
 
-from muscle_torque_map import lut
+from muscle_torque_map import lut, spec_setup
 import xarray as xr
 from tqdm import tqdm
 from scipy.optimize import minimize
 import numpy as np
+import matplotlib.pyplot as plt
 
 # Rendering parameters
 IMG_HEIGHT = 1088
@@ -19,16 +21,24 @@ PLOT_H=600
 CO_CONTR_W=0.2
 
 #LUT generation parameters
-TORQUE_STEPS =10 # Number of torque levels to sample for each angle
+TORQUE_STEPS =30 # Number of torque levels to sample for each angle
 comb_lut = xr.open_dataarray("comb_lut.nc")
+func_calls=0
 
 
 def main():
+    #generate_lut("comb_lut_new.nc")
+    #print(func_calls)
+    global comb_lut
+    comb_lut = xr.open_dataarray("comb_lut_new.nc")
+
 
     plot_limits()
     
-    angle = 37
+    angle = 20
     req_torque = 5.0
+
+    plot_lut_slice(angle)
     
     activations=optimize_muscles_activation(angle, req_torque)
     activation_dict = {muscle: act for muscle, act in zip(lut.muscle.values, [round(a, 3) for a in activations])}
@@ -36,7 +46,7 @@ def main():
     #activations=[0,0,0,1,1,1]
     print(f"Resulting torque (LUT): {total_torque(activations, angle)}")
     
-    #generate_lut("comb_lut1.nc")
+    
     activations=get_activation(angle, req_torque)
     activation_dict = {muscle: act for muscle, act in zip(lut.muscle.values, [round(a, 3) for a in activations])}
     print(f"Optimal activation for angle {angle} and torque {req_torque} from combinedLUT: {activation_dict}")
@@ -101,7 +111,42 @@ def plot_limits():
     plt.grid(True)
     plt.savefig(f'plots/muscle_torque_map.png')
     print("Plots saved to ./plots/muscle_torque_map/ folder")
-        
+
+
+def plot_lut_slice(angle_deg):
+    """Plot a slice of the combined LUT using record.plot_data.
+
+    """
+
+    base_spec = spec_setup()
+    muscle_names = [muscle.name for muscle in base_spec.actuators]
+    angle_lut=comb_lut.interp(angle=angle_deg)
+    act_values = [(muscle_names[i],angle_lut.sel(activation_idx=i).values) for i in range(len(muscle_names))]
+    x_values = angle_lut.min_torque.values+(angle_lut.max_torque.values-angle_lut.min_torque.values)*angle_lut.torque_norm.values
+    plt.figure(figsize=(10, 6))
+
+# Iterate through the act_values list (muscle_name, activation_data)
+    for muscle_name, activations in act_values:
+        plt.plot(x_values, activations, label=muscle_name, linewidth=2)
+
+    # Adding labels and title
+    plt.title(f'Muscle Activations at {angle_deg}°', fontsize=14)
+    plt.xlabel('Torque (Nm)', fontsize=12)
+    plt.ylabel('Activation', fontsize=12)
+
+    # Enhancing the grid and appearance
+    plt.grid(True, linestyle='--', alpha=0.6)
+    plt.axhline(0, color='black', linewidth=1) # Baseline
+
+    # Adding the legend for the 6 muscles
+    plt.legend(title="Muscles", loc='best', frameon=True)
+    save_name=f"{angle_deg}deg_activations"
+    plt.tight_layout()
+    directory = "plots/" + os.path.dirname(save_name)
+    os.makedirs(directory, exist_ok=True)
+    plt.savefig(f'plots/{save_name}.png')
+    print("Plot saved to "f"./plots/ folder")
+
 def total_torque(activations,angle):
         torque = 0
         for i, muscle in enumerate(lut.muscle.values):
@@ -109,6 +154,8 @@ def total_torque(activations,angle):
         return torque
 def optimize_muscles_activation(angle,req_torque):
     def torque_at_angle(activations):
+        global func_calls
+        func_calls+=1
         return total_torque(activations, angle)
     
     def objective(activations):
