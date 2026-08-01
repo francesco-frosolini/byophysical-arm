@@ -6,8 +6,10 @@ for muscle torque as a function of joint angle and activation level.
 """
 
 import __main__
+import os
 import sys
 import mujoco as m
+import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 from tqdm import tqdm
@@ -28,7 +30,9 @@ TIMESTEP = 0.001  # Simulation timestep in seconds
 # LUT generation parameters
 ACT_STEPS = 1  # Number of activation levels to sample
 ANGLE_STEPS = 36  # Number of joint angles to sample
-lut = xr.open_dataarray("forward_lut.nc")
+HERE = os.path.dirname(__file__)
+MODELS_DIR = os.path.join(HERE, "models")
+lut = xr.open_dataarray(os.path.join(MODELS_DIR, "forward_lut.nc"))
 
 
 def main():
@@ -37,8 +41,8 @@ def main():
     #global lut
     #lut = xr.open_dataarray("forward_lut_new.nc")
     # Run sample experiment with plotting
-    #t = torque_experiment("BRA", angle_deg=90, activation=1, plot=True)
-    #print(t)
+    t = torque_experiment("BRA", angle_deg=90, activation=0, plot=False)
+    print(t)
     #t = torque_experiment("B", angle_deg=90, activation=0.5, plot=True)
     #print(t)
 
@@ -49,7 +53,7 @@ def main():
     
     for i in muscle_names:
         print(f"Plotting LUT slice for {i} at 0 act")
-        plot_lut_slice(i,activation=1)
+        plot_lut_slice(i,activation=0.0)
     """
     req_torque = 8
     for muscle in muscle_names:
@@ -100,8 +104,9 @@ def generate_lut(name):
                 torque = run_activation_experiment(spec_angle, [muscle], [activation])
                 lut.loc[muscle, angle, activation] = torque
 
-    # save LUT to disk using xarray's built-in NetCDF format
-    lut.to_netcdf(name)
+    # save LUT to disk in the models directory
+    output_path = os.path.join(MODELS_DIR, os.path.basename(name))
+    lut.to_netcdf(output_path)
 
 
 def setup_muscle(muscle_name):
@@ -280,16 +285,44 @@ def plot_lut_slice(muscle_name, angle_deg=None, activation=None, torque=None):
         save_name = f"muscle_torque_map/{muscle_name}/{angle_deg}deg_vs_activation"
         title = f"{muscle_name} torque vs activation at {angle_deg}°"
     elif activation is not None:
-        #BUGGED torque_values = lut.sel(muscle=muscle_name).interp(activation=activation)
-        t0=lut.sel(muscle=muscle_name,activation=0)
-        t1=lut.sel(muscle=muscle_name,activation=1)
-        torque_values=t0.values+activation*t1.values
+        t0 = lut.sel(muscle=muscle_name, activation=0)
+        t1 = lut.sel(muscle=muscle_name, activation=1)
+        torque_values = t0.values + activation * (t1.values - t0.values)
         x_values = lut.coords["angle"].values
+
         xy_series = list(zip(x_values.tolist(), torque_values.tolist()))
         save_name = f"muscle_torque_map/{muscle_name}/activation_{activation:.2f}_vs_angle"
         title = f"{muscle_name} torque vs angle at activation {activation:.2f}"
     record.plot_data(xy_series, save_name, title=title)
     print("Plot saved to "f"./plots/muscle_torque_map/{muscle_name}/ folder")
+
+
+def plot_all_lut_slices_at_activation(activation, muscle_names=None):
+    """Plot torque-vs-angle slices for all muscles at one activation level on the same figure."""
+    if muscle_names is None:
+        muscle_names = [muscle.name for muscle in spec_setup().actuators]
+
+    angles = lut.coords["angle"].values
+    fig, ax = plt.subplots(figsize=(8, 5), dpi=300)
+    ax.grid(True, alpha=0.3)
+
+    for muscle_name in muscle_names:
+        t0 = lut.sel(muscle=muscle_name, activation=0)
+        t1 = lut.sel(muscle=muscle_name, activation=1)
+        torque_values = t0.values + activation * (t1.values - t0.values)
+        ax.plot(angles, torque_values, label=muscle_name)
+
+    ax.set_title(f"Torque vs angle at activation {activation:.2f}")
+    ax.set_xlabel("Angle [deg]")
+    ax.set_ylabel("Torque [Nm]")
+    ax.legend(loc="best")
+
+    save_name = f"muscle_torque_map/all_muscles/activation_{activation:.2f}_vs_angle"
+    directory = "plots/" + os.path.dirname(save_name)
+    os.makedirs(directory, exist_ok=True)
+    plt.savefig(f"plots/{save_name}.png")
+    plt.close(fig)
+    print("Plot saved to ./plots/muscle_torque_map/all_muscles/ folder")
 
 if __name__ == "__main__":
     main()

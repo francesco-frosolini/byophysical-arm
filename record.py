@@ -158,7 +158,7 @@ def draw_time_overlay(data, mjr_context: m.MjrContext, w, h):
         mjr_context
     )
 
-def plot_data(xy_series, save_name, title: None | str = None, ref_series=None):
+def plot_data(xy_series, save_name, title: None | str = None, xlabel: None | str = None, ylabel: None | str = None, ref_series=None):
     """Plot and save data given as a list of (x, y) tuples.
 
     The x values are not required to be time; they only need to be the same
@@ -170,6 +170,7 @@ def plot_data(xy_series, save_name, title: None | str = None, ref_series=None):
     xvals, yvals = zip(*xy_series)
     figsize = (PLOT_W / DPI, PLOT_H / DPI)
     _, ax = plt.subplots(figsize=figsize, dpi=DPI)
+    ax.grid(True, alpha=0.3)
 
     ax.plot(xvals, yvals)
     if ref_series is not None:
@@ -181,6 +182,12 @@ def plot_data(xy_series, save_name, title: None | str = None, ref_series=None):
         ax.set_title(title)
     else:
         ax.set_title(f'{save_name} over time\n')
+
+    if xlabel is not None:
+        ax.set_xlabel(xlabel)
+
+    if ylabel is not None:
+        ax.set_ylabel(ylabel)
 
     # Save the plot
     directory = "plots/" + os.path.dirname(save_name)

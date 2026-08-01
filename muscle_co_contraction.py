@@ -18,11 +18,15 @@ PLOT_W=800
 PLOT_H=600
 
 # Optimization parameters
-CO_CONTR_W=0.2
+CO_CONTR_W=0.4
+
+# File paths
+HERE = os.path.dirname(__file__)
+MODELS_DIR = os.path.join(HERE, "models")
 
 #LUT generation parameters
-TORQUE_STEPS =30 # Number of torque levels to sample for each angle
-comb_lut = xr.open_dataarray("comb_lut.nc")
+TORQUE_STEPS = 30 # Number of torque levels to sample for each angle
+comb_lut = xr.open_dataarray(os.path.join(MODELS_DIR, "comb_lut_W=0.4.nc"))
 func_calls=0
 
 
@@ -30,12 +34,12 @@ def main():
     #generate_lut("comb_lut_new.nc")
     #print(func_calls)
     global comb_lut
-    comb_lut = xr.open_dataarray("comb_lut_new.nc")
+    comb_lut = xr.open_dataarray(os.path.join(MODELS_DIR, "comb_lut_W=0.4.nc"))
 
 
     plot_limits()
     
-    angle = 20
+    angle = 120
     req_torque = 5.0
 
     plot_lut_slice(angle)
@@ -95,7 +99,8 @@ def generate_lut(name):
             #activations=np.random.rand(6)
             comb_lut.loc[angle, torque_norm[i]]=activations
     
-    comb_lut.to_netcdf(name)
+    output_path = os.path.join(MODELS_DIR, os.path.basename(name))
+    comb_lut.to_netcdf(output_path)
 
 def plot_limits():
     import matplotlib.pyplot as plt
